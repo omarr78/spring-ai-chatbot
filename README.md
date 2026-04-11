@@ -104,44 +104,51 @@ The endpoint returns a plain text string with the AI-generated reply (not JSON, 
 
 #### Response Example:
 
-```text
-There are many great cars to consider when buying a new vehicle. Here are some popular options across various price ranges and interests:
-
-**Mid-range ( $20,000 - $30,000)**
-
-1. Toyota Corolla: A reliable and fuel-efficient sedan with a comfortable ride.
-2. Honda Civic: A fun-to-drive compact car with good gas mileage and features like heated seats.
-3. Hyundai Elantra: A feature-packed sedan with a smooth ride and strong engine options.
-
-**Budget-friendly ( $15,000 - $20,000)**
-
-1. Chevrolet Cruze: A solid economy car with a comfortable ride and low maintenance costs.
-2. Kia Rio: A budget-friendly subcompact car with plenty of standard features and good fuel economy.
-3. Ford Focus: A fun-to-drive compact car with a range of engine options and a premium feel.
-
-**Luxury ( $30,000 - $50,000)**
-
-1. Audi A4: A comfortable and feature-rich sedan with a smooth ride and strong engine options.
-2. BMW 3 Series: A luxurious and performance-oriented compact sedan or wagon.
-3. Mercedes-Benz C-Class: A premium and well-equipped sedan or coupe.
-
-**Electric/Hybrid ( $30,000 - $50,000)**
-
-1. Tesla Model 3: An electric sedan with a range of up to 326 miles and advanced features like Autopilot.
-2. Toyota Prius: A hybrid compact car with excellent fuel economy and low emissions.
-3. Honda Clarity Hybrid: A mid-size sedan with a smooth ride and strong engine options.
-
-**SUV/Crossover ( $25,000 - $40,000)**
-
-1. Honda CR-V: A reliable and practical SUV with a spacious interior and good fuel economy.
-2. Toyota RAV4: A popular and feature-packed compact SUV with a roomy interior.
-3. Subaru Forester: A safe and capable compact SUV with all-wheel drive and plenty of standard features.
-
-These are just a few examples, and there are many other great cars available in each category. It's essential to research and test drive different models to find the best fit for your needs and budget.
-
-```
+![Car Suggestions Response](./pics/pic1.png)
 
 ## API Endpoints
 
-- `GET /api/ai/chat?message={your_message}`: Generates an AI response to the provided message.
+### 1. Generic AI Endpoint
 
+- `GET /api/ai/chat?message={your_message}`: Generates an AI response to any question without restrictions.
+
+**Example:**
+```bash
+curl "http://localhost:8080/api/ai/chat?message=Explain spring framework in two lines"
+```
+
+The generic endpoint has no topic restrictions and will answer any question, including those outside the application's scope.
+
+![Out of Scope Question Response](./pics/pic2.png)
+
+### 2. Specialized Car Endpoint with System Role
+
+- `GET /api/ai/car/chat?message={your_message}`: Generates responses **only** about cars. Questions outside this scope return "I don't know."
+
+#### Understanding System Role
+
+A **system role** (or system prompt) is an instruction given to an AI model at the beginning of a conversation to define:
+
+- **Behavior**: How the model should respond to questions (e.g., step-by-step, short, with code, with examples, etc.)
+- **Personality**: The tone and style of responses (e.g., friendly, formal, funny, Strict, etc.)
+- **Boundaries**: What topics the model should and should not answer (e.g., Topics to avoid, Rules to follow, 
+funny, Safety constraints, etc.)
+
+This ensures the model stays focused on its intended purpose throughout the conversation.
+
+#### Example: Using the Car-Scoped Endpoint
+
+**Request (Out of Scope Question):**
+```bash
+curl "http://localhost:8080/api/ai/car/chat?message=Explain spring framework in two lines"
+```
+
+**Response:**
+```text
+I don't know
+```
+
+![Car-Scoped Endpoint Response](./pics/pic3.png)
+
+**Explanation:** The CarController uses a system role that restricts responses to car-related topics only. 
+Since "Explain spring framework" is outside the scope, the model declines to answer.
