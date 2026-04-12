@@ -255,3 +255,44 @@ Suppose you want to get a car recommendation and then ask a follow-up question a
 - The AI remembers that the previous car discussed was the Toyota Corolla, so when you ask for the prices, it provides relevant information about that specific car.
 - This persistent context enables a more natural, multi-turn conversation, similar to how you would interact with a human expert.
 
+---
+
+### Spring AI with Ollama and Function Calling
+
+This section demonstrates how the AI can call backend functions to retrieve real data and provide accurate responses.
+
+![AI Function Calling Diagram](pics/AI_function_calling.png)
+
+#### How It Works
+
+1. **User Query to Spring AI**:  
+   The user sends a message, e.g., "What is the price of the BMW X6?" Spring AI includes available tools (functions) in the prompt.
+
+2. **Spring AI to Ollama Model**:  
+   Spring AI forwards the user message and tool definitions to the Ollama model.
+
+3. **AI Decides to Call a Function**:  
+   If the AI needs data, it responds with a function call request, e.g.:  
+   ```json
+   {
+     "function": "getPriceByName",
+     "arguments": {
+       "carName": "BMW X6"
+     }
+   }
+   ```
+
+4. **Function Execution**:  
+   Spring AI invokes the corresponding method in `CarAITools` (e.g., `getPriceByName`), which queries the database via `CarService` and returns a `CarPriceResponse`.
+
+5. **Result Back to AI**:  
+   Spring AI sends the function result to the Ollama model.
+
+6. **Generate Response**:  
+   The AI uses the data to create a natural response, e.g., "The BMW X6 is priced at $65,000."
+
+#### Full Flow
+User → Spring AI → Ollama Model → Function Call → Backend Execution → Result to Model → Human-Friendly Response
+
+#### Function Registry
+Spring AI maintains a registry of `@Tool`-annotated methods in `CarAITools`, allowing the AI to discover and invoke them as needed.
