@@ -1,4 +1,4 @@
-package org.example.ai.Repository;
+package org.example.ai.repository;
 
 import org.example.ai.entity.Car;
 

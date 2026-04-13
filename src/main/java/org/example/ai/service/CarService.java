@@ -1,7 +1,7 @@
 package org.example.ai.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.example.ai.Repository.CarRepository;
+import org.example.ai.repository.CarRepository;
 import org.example.ai.dto.CarDetailsResponse;
 import org.example.ai.dto.CarPriceResponse;
 import org.example.ai.entity.Car;
