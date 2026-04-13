@@ -296,3 +296,151 @@ User → Spring AI → Ollama Model → Function Call → Backend Execution → 
 
 #### Function Registry
 Spring AI maintains a registry of `@Tool`-annotated methods in `CarAITools`, allowing the AI to discover and invoke them as needed.
+
+---
+
+## Backend Architecture: Data Access and AI Tools
+
+### CarRepository and CarService
+
+**CarRepository** is a Spring Data JPA repository that provides data access to the Car entity, offering CRUD operations and custom query methods to fetch cars by brand or other criteria.
+
+**CarService** is the business logic layer that uses `CarRepository` to fetch car data and exposes methods called by `CarAITools`:
+
+- **`getCars()`**: Retrieves all cars from the database
+  - Log: `getCars() called - retrieving all cars` → `getCars() - returning [count] total car(s)`
+
+- **`getCarPriceByName(carName)`**: Finds a car by name or brand+model and returns its price
+  - Log: `getCarPriceByName() called with carName='[name]'` → `getCarPriceByName() - success | response=CarPriceResponse[name=[name], price=[price]]`
+
+- **`getCarDetailsByName(carName)`**: Retrieves full car details (brand, model, type, year, fuel type, price)
+  - Log: `getCarDetailsByName() called with carName='[name]'` → `getCarDetailsByName() - success | response=CarDetailsResponse[...]`
+
+- **`getCarsByBrandName(brand)`**: Filters cars by brand name
+  - Log: `getCarsByBrandName() called with brandName='[brand]'` → `getCarsByBrandName() - found [count] car(s) for brandName='[brand]'`
+
+### CarAITools - Available Tools for AI
+
+These `@Tool`-annotated methods enable the AI to query car data:
+
+1. **`getAllCars()`** - Returns list of all available cars
+2. **`getPriceByName(carName)`** - Returns price of a specific car
+3. **`getDetailsByName(carName)`** - Returns full details (brand, type, year, fuel, price)
+4. **`getCarsByBrand(brand)`** - Returns cars matching a specific brand
+
+### ChatMemory
+
+The `CarStoreController` uses `ChatMemory` to persist conversation history. Currently, a fixed conversation ID (`"SameID"`) is used until multi-user support is implemented.
+
+---
+
+## Testing the AI with Function Calling
+
+### Test Case 1: Get All Cars
+
+**Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=Show me all cars available in the store"
+```
+
+**Response:**
+```text
+Here's a clean comma-separated list of all the cars available in the store:
+Toyota Corolla, Toyota Camry, Toyota RAV4, Honda Civic, Honda Accord, Honda CR-V, ...
+```
+
+![pic9.png](pics/pic9.png)
+
+**Service Logs:**
+```
+getCars() called - retrieving all cars
+getCars() - returning 30 total car(s)
+```
+
+### Test Case 2: Get Car Price
+
+**Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=what is the price of the BMW X6"
+```
+
+**Response:**
+```text
+The BMW X6 is priced at $65,000.
+```
+
+![pic10.png](pics/pic10.png)
+
+**Service Logs:**
+```
+getCarPriceByName() called with carName='BMW X6'
+getCarPriceByName() - success | response=CarPriceResponse[name=BMW X6, price=65000]
+```
+
+### Test Case 3: Get Full Car Details
+
+**Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=what is the full details about BMW X6"
+```
+
+**Response:**
+```text
+The BMW X6 is a 2024 SUV with a diesel engine, priced at $65,000.
+```
+
+![pic11.png](pics/pic11.png)
+
+**Service Logs:**
+```
+getCarDetailsByName() called with carName='BMW X6'
+getCarDetailsByName() - success | response=CarDetailsResponse[brand=BMW, name=X6, type=suv, price=65000, year=2024, fuelType=diesel]
+```
+
+### Test Case 4: Get Cars by Brand
+
+**Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=show me the cars with brand of Mercedes-Benz"
+```
+
+**Response:**
+```text
+Here's a clean comma-separated list of Mercedes-Benz cars available in the store:
+Mercedes-Benz C-Class, E-Class, GLC
+```
+
+![pic12.png](pics/pic12.png)
+
+**Service Logs:**
+```
+getCarsByBrandName() called with brandName='Mercedes-Benz'
+getCarsByBrandName() - found 3 car(s) for brandName='Mercedes-Benz' | response=[CarDetailsResponse[...], ...]
+```
+
+### Test Case 5: Context-Aware Follow-up (Persistent Memory)
+
+**First Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=show me the cars with brand of Mercedes-Benz"
+```
+
+**Follow-up Request:**
+```bash
+curl "http://localhost:8080/api/ai/car-store/chat?message=what is the price of the GLC"
+```
+
+**Response:**
+```text
+The Mercedes-Benz GLC is priced at $60,000.
+```
+
+![pic13.png](pics/pic13.png)
+
+**Service Logs:**
+```
+getCarPriceByName() called with carName='GLC'
+getCarPriceByName() - success | response=CarPriceResponse[name=Mercedes-Benz GLC, price=60000]
+```
+
+**Key Point:** The AI remembers the previous brand context and correctly interprets "GLC" as "Mercedes-Benz GLC" due to conversation memory.
